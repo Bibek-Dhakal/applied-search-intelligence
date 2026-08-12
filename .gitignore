@@ -34,3 +34,10 @@ __pycache__/
 .venv/
 venv/
 .env
+
+# --- IDE / editor ----------------------------------------------------------
+# JetBrains IDEs (PyCharm, IntelliJ, etc.)
+.idea/
+
+# VS Code
+.vscode/
