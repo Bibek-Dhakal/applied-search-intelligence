@@ -12,20 +12,20 @@ copy its whole content, and paste it into your chat before asking for help. That
 
 ## The table — find your task, load ONE skill
 
-| Your task | Load this skill | Also load for data work |
-|---|---|---|
-| Any task — how to work with your assistant at all | `directing-your-ai-assistant/SKILL.md` | — |
-| Pick a lane, frame your question (ML-02, ML-03) | `framing-ml-problems/SKILL.md` | `flyrank/flyrank-data/SKILL.md` |
-| Write + verify the data contract (ML-04) | `writing-data-contracts/SKILL.md` | `flyrank/flyrank-data/SKILL.md` |
-| Query the big warehouse without downloading it (ML-04/05, capstone) | `querying-big-datasets/SKILL.md` | `flyrank/flyrank-data/SKILL.md` |
-| EDA + signal tests with verdicts (ML-06) | `auditing-signals/SKILL.md` | `flyrank/flyrank-data/SKILL.md` |
-| Build the rule baseline + ranked queue (ML-07) | `building-baselines/SKILL.md` | `flyrank/flyrank-data/SKILL.md` |
-| Train and compare the model (ML-08) | `training-honest-models/SKILL.md` | `flyrank/flyrank-data/SKILL.md` |
-| Hunt leakage; validate honestly (ML-05, ML-09) | `hunting-leakage-and-validating/SKILL.md` | `flyrank/flyrank-data/SKILL.md` |
-| Write claims that hold (ML-09, ML-10, the paper) | `writing-honest-claims/SKILL.md` | — |
-| Write the research paper (ML-11, W7) | `writing-research-papers/SKILL.md` | — |
-| Deploy the paper as a page (ML-11) | `deploying-static-pages/SKILL.md` | — |
-| Understand FlyRank + the problem (background) | `flyrank/flyrank-context/SKILL.md` | — |
+| Your task                                                           | Load this skill                           | Also load for data work         |
+|---------------------------------------------------------------------|-------------------------------------------|---------------------------------|
+| Any task — how to work with your assistant at all                   | `directing-your-ai-assistant/SKILL.md`    | —                               |
+| Pick a lane, frame your question (ML-02, ML-03)                     | `framing-ml-problems/SKILL.md`            | `flyrank/flyrank-data/SKILL.md` |
+| Write + verify the data contract (ML-04)                            | `writing-data-contracts/SKILL.md`         | `flyrank/flyrank-data/SKILL.md` |
+| Query the big warehouse without downloading it (ML-04/05, capstone) | `querying-big-datasets/SKILL.md`          | `flyrank/flyrank-data/SKILL.md` |
+| EDA + signal tests with verdicts (ML-06)                            | `auditing-signals/SKILL.md`               | `flyrank/flyrank-data/SKILL.md` |
+| Build the rule baseline + ranked queue (ML-07)                      | `building-baselines/SKILL.md`             | `flyrank/flyrank-data/SKILL.md` |
+| Train and compare the model (ML-08)                                 | `training-honest-models/SKILL.md`         | `flyrank/flyrank-data/SKILL.md` |
+| Hunt leakage; validate honestly (ML-05, ML-09)                      | `hunting-leakage-and-validating/SKILL.md` | `flyrank/flyrank-data/SKILL.md` |
+| Write claims that hold (ML-09, ML-10, the paper)                    | `writing-honest-claims/SKILL.md`          | —                               |
+| Write the research paper (ML-11, W7)                                | `writing-research-papers/SKILL.md`        | —                               |
+| Deploy the paper as a page (ML-11)                                  | `deploying-static-pages/SKILL.md`         | —                               |
+| Understand FlyRank + the problem (background)                       | `flyrank/flyrank-context/SKILL.md`        | —                               |
 
 ## Reuse this on your next project
 

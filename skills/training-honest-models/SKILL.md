@@ -10,12 +10,12 @@ baseline — then read the errors before believing the score.
 
 ## Choose the method to fit the question
 
-| Question shape | Start with | Because |
-|---|---|---|
-| yes/no with an observed label | Logistic Regression, then Random Forest | readable → stronger |
-| "which first?" ranking | any classifier's probability, evaluated at precision@K | ranking needs scores, not labels |
-| grouping items | K-Means (pick k with silhouette), then NAME clusters after inspecting them | unsupervised needs human naming |
-| "what drives X?" | simple model + permutation importance | importance from a fit, checked by shuffling |
+| Question shape                | Start with                                                                 | Because                                     |
+|-------------------------------|----------------------------------------------------------------------------|---------------------------------------------|
+| yes/no with an observed label | Logistic Regression, then Random Forest                                    | readable → stronger                         |
+| "which first?" ranking        | any classifier's probability, evaluated at precision@K                     | ranking needs scores, not labels            |
+| grouping items                | K-Means (pick k with silhouette), then NAME clusters after inspecting them | unsupervised needs human naming             |
+| "what drives X?"              | simple model + permutation importance                                      | importance from a fit, checked by shuffling |
 
 Simplicity is a feature: a depth-2 decision tree you can print and read teaches more than an
 opaque model 2 points stronger. Add complexity only when the comparison earns it.
@@ -28,6 +28,7 @@ If the model wins at precision@50 but loses at precision@20 — report both; tha
 ## Read the errors
 
 A metric without error analysis is decoration. After training:
+
 - Where is the model most wrong? (which groups, which value ranges)
 - What does it lean on? (feature importances — then sanity-check: does the top feature make
   sense, or is it suspiciously perfect? Suspiciously perfect = probably leakage.)
