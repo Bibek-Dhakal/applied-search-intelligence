@@ -587,12 +587,12 @@
             Section 4 shows exactly how much that inflates the apparent result.</p>
 
         <div class="caution">
-            <strong>The leakage trap, demonstrated deliberately.</strong> Reintroducing <code>trend_pct</code> — the
-            exact percentage the trend label is derived from — as a feature pushed in-sample accuracy from an honest
-            0.6445 to a hollow 0.9999 on the warehouse contract test, and pushed Precision@50 from 0.640 to 0.980 when
-            <code>ctr</code> was reintroduced into the final model's feature set. Both leaks were removed before any
-            reported result; the tests are kept here specifically to show the leakage harness catches a real leak when
-            one is deliberately planted.
+            <strong>The leakage trap, demonstrated deliberately.</strong> Reintroducing <code>trend_pct</code>, the
+            exact percentage the trend label is derived from, pushed in-sample accuracy from an honest 0.6445 to a
+            hollow 0.9999 on the warehouse contract test. Separately, reintroducing <code>ctr</code> into the final
+            model's feature set pushed Precision@50 from 0.640 to 0.980. Both leaks were removed before any reported
+            result; the tests are kept here specifically to show the leakage harness catches a real leak when one is
+            deliberately planted.
         </div>
     </section>
 
@@ -683,8 +683,9 @@
             </div>
         </div>
 
-        <p>Note the baseline rule barely clears random chance at Precision@50 (0.260 vs. 0.286) — on unseen clients, the
-            hand-written thresholds don't generalize much better than guessing. The learned model's advantage is real,
+        <p>Note the baseline rule falls slightly below random chance at Precision@50 (0.260 vs. 0.286) — on unseen
+            clients, the
+            handwritten thresholds don't generalize much better than guessing. The learned model's advantage is real,
             but so is its error pattern: of its top-20 highest-confidence picks, 3 were false positives, and all 3
             clustered in the <code>page_3_5</code> position tier at the low end of the impression floor (146–227
             impressions) — exactly where a CTR estimate is noisiest. Feature importance was reassuringly spread rather
@@ -814,7 +815,8 @@
 
         <h3>Monitoring &amp; retrain triggers</h3>
         <p>Re-check Precision@50 against the 0.640 baseline whenever a new month's data becomes available — a drop below
-            roughly 0.50 pauses the queue pending review. Track the label's positive rate (currently ~28.6%) for drift,
+            roughly 0.50 pauses the queue pending review. Track the label's positive rate (currently ~31.6% across the
+            analytical slice) for drift,
             and retrain on an updated client-grouped split whenever new clients are onboarded, rather than appending
             them to a frozen model.</p>
 
@@ -833,7 +835,7 @@
     <div class="wrap">
         <h2>Reproducibility</h2>
         <p>Every result above traces to an executed notebook in the project repository. Fixed random seed (42)
-            throughout; client-grouped split via <code>GroupShuffleSplit</code>.</p>
+            throughout; client-grouped split via <code style="color: blue">GroupShuffleSplit</code>.</p>
         <ul class="repro-list">
             <li><code>work/notebooks/w01_research_question.ipynb</code> — lane selection, first data check</li>
             <li><code>work/notebooks/w02_ml_task_framing.ipynb</code> — task type, target, success metric</li>
