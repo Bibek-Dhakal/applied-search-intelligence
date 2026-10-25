@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Do Rankings Predict Clicks? A CTR Opportunity Score for Content Review Queues</title>
     <meta name="description"
-          content="A decision-support model for ranking underperforming search pages, built and honestly validated on ~79M rows of anonymized FlyRank search performance data.">
+          content="A decision-support model for ranking underperforming search pages, engineered on a ~79M-row warehouse and honestly validated on a 22,006-row slice of FlyRank search data.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,500;8..60,600;8..60,700&family=Inter:wght@400;500;600&display=swap"
@@ -485,12 +485,13 @@
             positions and content types, and a reviewer with limited time needs to know which pages are worth a metadata
             rewrite. This project frames that as a ranking task: score every page by how far its observed CTR falls
             below its position-and-type peer group, using only features knowable before the fact. A five-feature Random
-            Forest, evaluated under a client-holdout split so no client's pages leak between train and test, reaches a
-            Precision@50 of 0.640 — roughly 2.5&times; a hand-written baseline rule (0.260) and well above the
-            random-chance floor (0.286). A deliberate leakage test and a before/after naive-vs-grouped split comparison
-            both confirm this result is not an artifact of the validation setup. The output is packaged as a reviewed,
-            reason-coded action queue with an explicit no-go list — a triage tool for a human reviewer, not an automated
-            editor.</p>
+            Forest, engineered across a 79-million-row warehouse and evaluated on a focused 22,006-row slice under a
+            strict client-holdout split, reaches a directionally observed Precision@50 of 0.640 (outperforming a
+            hand-written baseline rule of 0.260 and random chance of 0.286). A deliberate leakage test and a
+            before/after naive-vs-grouped split comparison indicate this result is driven by genuine signal rather than
+            client-memorization, though single-seed variance and zero-click opportunity limits must be accounted for.
+            The output is packaged as a reviewed, reason-coded action queue with an explicit no-go list — a triage tool
+            for a human reviewer, not an automated editor.</p>
     </div>
 </div>
 
@@ -515,33 +516,24 @@
     <section id="data">
         <span class="sec-num">2</span>
         <h2>Data</h2>
-        <p>Two data sources were used at different stages of the project, both anonymized/pseudonymized FlyRank
-            releases:</p>
+        <p>The project spans two scales using anonymized/pseudonymized FlyRank releases:</p>
         <ul>
-            <li><strong>Starter release</strong> — a 30,000-row, 44-column anonymized CSV covering one content item per
-                row: search metadata (volume, competition, CPC), content characteristics (word count, type, age), and
-                90-day and 30/prior-30-day GSC/GA4 performance (impressions, clicks, sessions, CTR, average position,
-                trend direction). Used for framing, EDA, the baseline rule, the model, and the validation audit.
-            </li>
             <li><strong>Full warehouse release</strong> — a pseudonymized Hugging Face dataset (<code>FlyRank/internship-warehouse</code>)
-                of ~78.8M daily content-performance rows, ~520K content items, and 104 clients, used in the data
-                contract stage to verify the grain, availability, and scale of the fuller panel behind the starter
-                slice.
+                of ~78.8M daily content-performance rows, ~520K content items, and 104 clients, used via DuckDB SQL for
+                feature engineering, scaling limits, and data contract validation.
+            </li>
+            <li><strong>Starter release (Modeling Slice)</strong> — a focused 30,000-row, 44-column extracted slice
+                covering search metadata, content characteristics, and 90-day GSC/GA4 performance. After filtering for
+                visible pages (≥100 impressions), this resulted in a core modeling dataset of 22,006 pages.
             </li>
         </ul>
 
         <div class="stat-row">
-            <div class="stat"><span class="n">30,000</span><span class="l">rows, starter CSV</span></div>
+            <div class="stat"><span class="n">78.8M</span><span class="l">rows, full daily warehouse</span></div>
+            <div class="stat"><span class="n">30,000</span><span class="l">rows, starter slice extraction</span></div>
             <div class="stat"><span class="n">22,006</span><span class="l">pages with ≥100 impressions/90d</span></div>
             <div class="stat"><span class="n">30</span><span class="l">distinct clients in that slice</span></div>
-            <div class="stat"><span class="n">78.8M</span><span class="l">rows, full daily warehouse</span></div>
         </div>
-
-        <p><strong>Time window:</strong> the starter slice's performance fields are 90-day trailing windows plus a
-            last-30 / prior-30 split, sourced from Google Search Console and GA4. The warehouse contract stage verified
-            March 2026 as a representative mid-panel month (9.84M rows, 3.61M with <code>gsc_data_available IS
-                TRUE</code>) and confirmed the grain directly: on 2026-03-15, total content rows and unique <code>content_hash_id</code>
-            counts matched exactly at 319,758 — one row per content item per day, as claimed.</p>
 
         <p><strong>Excluded on purpose:</strong> the final-month partition of the warehouse (June 2026) was treated as a
             sealed test month and never used for label design, since it's the natural outcome window of any
@@ -564,20 +556,22 @@
             median CTR of its peer group, defined as pages sharing the same <code>position_tier</code> and <code>content_type</code>.
             This directly encodes "underperforming relative to comparable pages," not an arbitrary fixed threshold — and
             deliberately avoids <code>trend_direction</code>/<code>trend_pct</code>, which an earlier leakage test
-            showed are themselves near-tautological with any trend-based label (see the leakage box below). Label rate
+            showed are themselves near-tautological with any trend-based label. Label rate
             on the 22,006-row analytical slice: <strong>31.6%</strong> positive.</p>
 
         <h3>Features</h3>
         <p>Five features, each knowable before the review decision is made: <code>impressions_90d</code>, <code>avg_position</code>,
             <code>content_age_days</code>, <code>word_count</code>, <code>engagement_rate</code>. <code>ctr</code> and
-            <code>clicks_90d</code> were deliberately excluded — <code>ctr</code> is the numerator of the label itself,
-            so including it would reproduce the leakage trap demonstrated below in a new disguise.</p>
+            <code>clicks_90d</code> were deliberately excluded because <code>ctr</code> is an ingredient in the target
+            label function, and clicks are highly correlated.</p>
 
         <h3>Baseline</h3>
         <p>A transparent hand-written rule, encoded before any model training: flag a page as
             <code>high_volume_low_ctr</code> if it ranks in the top 10 with ≥500 impressions and CTR below 1.5, or as
             <code>striking_distance_opportunity</code> if it ranks 11–20 with ≥250 impressions and CTR below 1.0. Score
-            scales with impressions × the CTR gap, so the highest-exposure misses surface first.</p>
+            scales with impressions × the CTR gap, so the highest-exposure misses surface first. <em>(Note: Post-audit
+                analysis revealed the rule operates primarily as an impressions sorter, Spearman correlation 0.90,
+                rather than a strict CTR filter).</em></p>
 
         <h3>Validation design</h3>
         <p>Client-holdout split (<code>GroupShuffleSplit</code>, 75/25 on <code>client_id</code>) — no page from a
@@ -592,7 +586,8 @@
             hollow 0.9999 on the warehouse contract test. Separately, reintroducing <code>ctr</code> into the final
             model's feature set pushed Precision@50 from 0.640 to 0.980. Both leaks were removed before any reported
             result; the tests are kept here specifically to show the leakage harness catches a real leak when one is
-            deliberately planted.
+            deliberately planted. (Note: <code>engagement_rate</code> was found to be 63% zero-inflated during the
+            audit, requiring careful monitoring to ensure it doesn't act as a client fingerprint.)
         </div>
     </section>
 
@@ -688,9 +683,11 @@
             handwritten thresholds don't generalize much better than guessing. The learned model's advantage is real,
             but so is its error pattern: of its top-20 highest-confidence picks, 3 were false positives, and all 3
             clustered in the <code>page_3_5</code> position tier at the low end of the impression floor (146–227
-            impressions) — exactly where a CTR estimate is noisiest. Feature importance was reassuringly spread rather
+            impressions) — exactly where a CTR estimate is noisiest (and often represents exactly zero clicks). Feature
+            importance was reassuringly spread rather
             than dominated by one input (<code>impressions_90d</code> 37%, <code>engagement_rate</code> 25%, <code>avg_position</code>
-            24%, <code>word_count</code> 8%, <code>content_age_days</code> 6%), which argues against hidden leakage.</p>
+            24%, <code>word_count</code> 8%, <code>content_age_days</code> 6%), which argues against a single hidden
+            leak.</p>
 
         <h3>Why the split matters: before / after</h3>
         <p>The same Random Forest, same features, scored under two different splits on the same data:</p>
@@ -721,8 +718,9 @@
         <div class="note">
             <strong>Observed, not just asserted:</strong> a naive split that looks almost perfect (0.940–1.000)
             collapses once client identity is properly held out. The gap — 0.150 at Precision@20, 0.300 at Precision@50
-            — is the size of the illusion a convenient-but-wrong validation design would have reported. <strong>Precision@50
-            = 0.640 is the number this paper stands behind.</strong>
+            — is the size of the illusion a convenient-but-wrong validation design would have reported. <strong>The
+            0.940 figure was highly inflated by client memorization; Precision@50 = 0.640 represents a more honest,
+            observed snapshot on this specific dataset.</strong>
         </div>
     </section>
 
@@ -730,30 +728,24 @@
         <span class="sec-num">5</span>
         <h2>Limitations &amp; honest framing</h2>
         <ul>
-            <li><strong>The label is a proxy, not ground truth.</strong> "CTR anomaly relative to peer median" is a
-                reasonable, defensible construction — it is not a verified statement that a page's metadata is broken.
-                Roughly 1 in 3 of the top-50 flagged pages, under this evaluation, is not a real anomaly.
+            <li><strong>Correlation vs. Causation:</strong> This model identifies <em>observed</em> CTR gaps. It does
+                not causally prove that updating a page's metadata will recover the clicks.
             </li>
-            <li><strong>Correlation, not causation.</strong> This is observational data. Nothing here demonstrates that
-                rewriting a title or meta description would recover clicks — that would require a controlled
-                before/after experiment on actual edits, which this project does not run.
+            <li><strong>Single-Seed Variance:</strong> The 0.640 precision is an observed snapshot for a specific
+                8-client holdout (Seed 42). Across 20 random seeds, Precision@50 fluctuates (mean 0.74, std 0.15),
+                meaning it generally outperforms chance, but the exact number is not a fixed guarantee.
             </li>
-            <li><strong>Freshness is not a reliable lever, and is deliberately left out of the ranking.</strong> A
-                dedicated signal audit found <code>freshness_tier</code> only <strong>MIXED</strong> as a CTR predictor
-                (fresher pages did not reliably outperform older ones in this slice). Separately, a comparable
-                "freshness multiplier" finding elsewhere in FlyRank's own published research is self-flagged as
-                statistically unstable at long windows and is plausibly confounded by selection bias — pages get
-                refreshed <em>because</em> a team already believes they're worth saving. This project's queue ranks on
-                the observed CTR gap itself, not on content age.
+            <li><strong>Opportunity Size Limit:</strong> The top-ranked pages often have exactly zero clicks and sit
+                near the 250-impression floor. The expected absolute click gap is extremely small (< 1 click per 90
+                days), meaning this identifies relative statistical anomalies, not massive absolute traffic recoveries.
             </li>
-            <li><strong>Thin-volume noise is a live risk.</strong> All three of the final model's top-20 false positives
-                sat near the 100–250 impression floor. Below that volume, a CTR estimate is unstable enough to produce
-                false alarms even when the model's overall precision is strong.
+            <li><strong>Queue Sorting &amp; Inference:</strong> The deployed queue is ranked by predicted model
+                probability, not raw CTR gap. Furthermore, top-queue performance on strict holdout clients is closer to
+                ~0.48, which is lower than the overall 0.640 evaluation metric.
             </li>
-            <li><strong>Single dataset, single time slice.</strong> Trained and evaluated on one 22,006-row, 30-client
-                anonymized slice. A Precision@50 of 0.640 describes this data and this label definition — it is not a
-                guaranteed number for a different client mix, a different period, or FlyRank's actual internal flag
-                logic.
+            <li><strong>Zero-Click SERPs &amp; Brand Queries:</strong> The data cannot distinguish between a page that
+                has a bad title tag, versus a page that ranks for a "Zero-Click" AI Overview, or a query where the user
+                specifically wanted a competitor's brand.
             </li>
         </ul>
     </section>
@@ -762,7 +754,9 @@
         <span class="sec-num">6</span>
         <h2>Ranked recommendations: the action playbook</h2>
         <p>The model score and the baseline rule are combined into six archetypes, each mapped to a confidence tier and
-            a concrete action. Agreement between rule and model earns the highest confidence; a model-only flag earns a
+            a concrete action. The queue is ranked top-down by <code>confidence_tier</code> and <code>model_score</code>
+            (predicted anomaly probability). Agreement between rule and model earns the highest confidence; a model-only
+            flag earns a
             "look before you touch it" tier rather than an automatic top ranking.</p>
 
         <div class="archetype">
@@ -772,7 +766,7 @@
         </div>
         <div class="archetype">
             <span class="name tier-high">striking_distance_push</span>
-            <span class="desc">High model confidence, page 2 (striking distance), sufficient volume. On-page optimization + internal links.</span>
+            <span class="desc">High model confidence, page 2 (striking distance), sufficient volume, but the baseline rule MISSED it. On-page optimization + internal links.</span>
             <span class="count">18 pages</span>
         </div>
         <div class="archetype">
@@ -787,7 +781,7 @@
         </div>
         <div class="archetype">
             <span class="name tier-low">thin_volume_low_confidence</span>
-            <span class="desc">Score present, but below the impression floor needed to trust it. Do not act.</span>
+            <span class="desc">Score present, but below the impression floor (250) needed to trust it. Do not act.</span>
             <span class="count">2,363 pages</span>
         </div>
         <div class="archetype">
@@ -797,10 +791,22 @@
         </div>
 
         <h3>Human review is required, not optional</h3>
-        <p>Before acting on any flagged page, a reviewer should rule out: <strong>brand or navigational intent</strong>
-            (a page can rank well and still get few clicks because searchers want a competitor, not this result),
-            <strong>zero-click SERPs</strong> (an AI Overview or featured snippet answering the query directly makes a
-            metadata rewrite pointless), and <strong>thin-volume noise</strong> (see Limitations). Items in <code>quiet_risk_flag</code>
+        <p>Before acting on any flagged page, a reviewer should rule out:</p>
+        <ul>
+            <li><strong>Expected Click Gap:</strong> Even high-confidence anomalies might only be missing a fraction of
+                a click. Do not assume high probability equals high traffic reward.
+            </li>
+            <li><strong>Brand/navigational queries:</strong> a page can rank well and still get few clicks because
+                searchers want a competitor, not this result. Check top queries before rewriting anything.
+            </li>
+            <li><strong>Zero-click SERPs:</strong> an AI Overview or featured snippet answering the query directly makes
+                a metadata rewrite pointless. Confirm the SERP shape first.
+            </li>
+            <li><strong>Thin-volume noise:</strong> flagged pages near the 250 impression floor can look anomalous from
+                small-sample variance alone.
+            </li>
+        </ul>
+        <p>Items in <code>quiet_risk_flag</code>
             specifically require a look, since the model is disagreeing with the transparent rule.</p>
 
         <h3>What should never be automated</h3>
@@ -809,14 +815,14 @@
             <li>Treating a high confidence tier as proof a rewrite <em>will</em> recover clicks — this data is
                 observational.
             </li>
-            <li>Acting on any page below the 100-impression visibility floor.</li>
+            <li>Acting on any page below the 250-impression visibility floor.</li>
             <li>Bulk-refreshing content purely by age, given the mixed/possibly-confounded freshness evidence.</li>
         </ul>
 
         <h3>Monitoring &amp; retrain triggers</h3>
         <p>Re-check Precision@50 against the 0.640 baseline whenever a new month's data becomes available — a drop below
-            roughly 0.50 pauses the queue pending review. Track the label's positive rate (currently ~31.6% across the
-            analytical slice) for drift,
+            roughly 0.50 pauses the queue pending review. Track the label's positive rate (currently ~28.6% in the test
+            split) for drift,
             and retrain on an updated client-grouped split whenever new clients are onboarded, rather than appending
             them to a frozen model.</p>
 
