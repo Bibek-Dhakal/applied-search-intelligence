@@ -428,6 +428,16 @@
             color: #EFE9DB;
         }
 
+        /* Allow long tokens to break instead of forcing the page wider */
+        code, a, .archetype .name, .repro-list li {
+            overflow-wrap: anywhere;
+        }
+
+        /* Safety net so nothing can ever create a sideways scroll */
+        html, body {
+            overflow-x: clip;
+        }
+
         @media (max-width: 600px) {
             .masthead {
                 padding: 52px 0 44px 0;
@@ -439,6 +449,14 @@
 
             body {
                 font-size: 16px;
+            }
+
+            .wrap {
+                padding: 0 18px;
+            }
+
+            .abstract {
+                padding: 20px 18px;
             }
 
             .stat-row {
@@ -457,6 +475,34 @@
             .bar-label {
                 width: 88px;
                 font-size: .78rem;
+            }
+
+            /* Stack archetype rows so name / description / count each get full width */
+            .archetype {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 2px;
+            }
+
+            .archetype .count {
+                white-space: normal;
+            }
+
+            /* Tighter tables so the 4-column one fits */
+            table {
+                font-size: .86rem;
+            }
+
+            th, td {
+                padding: 8px 6px;
+            }
+
+            .split-charts .chart {
+                min-width: 0;
+            }
+
+            .repro-list code {
+                font-size: .8em;
             }
         }
     </style>
