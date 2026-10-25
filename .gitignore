@@ -41,3 +41,8 @@ venv/
 
 # VS Code
 .vscode/
+
+# Misc
+PATCH.md
+work/notebooks/task_e_audit_checks.ipynb
+
